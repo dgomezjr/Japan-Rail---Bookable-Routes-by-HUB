@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Japan Rail — Bookable Routes by Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;padding:24px;min-height:100vh;color:#1a1a1a}
+.outer{max-width:1100px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e0ddd6;padding:28px 28px 40px}
+.jr-title{font-size:16px;font-weight:600;color:#1a1a1a;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px}
+.jr-sub{font-size:12px;color:#888;margin-bottom:14px}
+.jr-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.lbadge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;border:1px solid}
+.lbadge-red{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.lbadge-blue{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+.lbadge-gray{background:#F1EFE8;color:#5F5E5A;border-color:#B4B2A9}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.dot-red{background:#E24B4A}
+.dot-blue{background:#378ADD}
+.dot-gray{background:#888780}
+.dot-amber{background:#BA7517}
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid #e0ddd6}
+.tab{padding:8px 20px;font-size:13px;font-weight:500;color:#888;cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#1a1a1a;border-bottom:2px solid #1a1a1a}
+.tab:hover:not(.active){color:#1a1a1a}
+.page{display:none}
+.page.active{display:block}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.hub-card{background:#fff;border:1px solid #e0ddd6;border-radius:10px;overflow:hidden}
+.hub-head{padding:10px 14px 9px;border-bottom:1px solid #e0ddd6;background:#fafaf8}
+.hub-code{font-size:17px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px}
+.hub-cities{font-size:11px;color:#888;margin-top:3px;line-height:1.5}
+.hub-body{padding:10px 14px}
+.route-section{margin-bottom:10px}
+.route-section:last-child{margin-bottom:0}
+.rsec-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.rsec-label-red{color:#A32D2D}
+.rsec-label-blue{color:#185FA5}
+.route-list{display:flex;flex-direction:column;gap:3px}
+.route-item{font-size:12px;color:#1a1a1a;display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:6px}
+.route-item-red{background:#FCEBEB}
+.route-item-blue{background:#E6F1FB}
+.route-arrow{color:#aaa;font-size:10px}
+.route-note{font-size:11px;color:#5F5E5A;background:#F1EFE8;border-radius:6px;padding:5px 9px;line-height:1.5;border-left:2px solid #B4B2A9;margin-top:6px}
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.filt{font-size:11px;font-weight:500;padding:4px 12px;border-radius:6px;border:1px solid #ccc;background:#f5f4f0;color:#666;cursor:pointer}
+.filt.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.hub-card.hidden{display:none}
+.p2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:14px}
+.p2-card{background:#fff;border:1px solid #e0ddd6;border-radius:10px;padding:13px 14px}
+.p2-card-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;color:#888}
+.p2-train-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;margin-bottom:8px}
+.p2-train-red{background:#FCEBEB;color:#791F1F}
+.p2-train-blue{background:#E6F1FB;color:#0C447C}
+.p2-ex{font-size:11px;color:#666;line-height:1.8}
+.p2-ex span{display:block}
+.mistakes-card{background:#fff;border:1px solid #e0ddd6;border-radius:10px;padding:13px 14px}
+.mistakes-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#A32D2D;margin-bottom:10px}
+.mistake-item{font-size:12px;color:#1a1a1a;padding:4px 0 4px 10px;border-left:2px solid #F09595;margin-bottom:5px;line-height:1.5}
+.mistake-item:last-child{margin-bottom:0}
+.tt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;margin-bottom:20px}
+.tt-card{background:#fff;border:1px solid #e0ddd6;border-radius:10px;overflow:hidden}
+.tt-head{padding:11px 14px;border-bottom:1px solid #e0ddd6;background:#fafaf8;display:flex;align-items:flex-start;gap:10px}
+.tt-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.tt-icon-red{background:#FCEBEB}
+.tt-icon-blue{background:#E6F1FB}
+.tt-icon-gray{background:#F1EFE8}
+.tt-icon-amber{background:#FAEEDA}
+.tt-name{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px}
+.tt-tagline{font-size:11px;color:#888;line-height:1.4}
+.tt-body{padding:11px 14px;display:flex;flex-direction:column;gap:9px}
+.tt-row{display:flex;gap:8px;align-items:flex-start}
+.tt-row-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#888;min-width:72px;padding-top:1px;flex-shrink:0}
+.tt-row-val{font-size:12px;color:#1a1a1a;line-height:1.6}
+.tt-destinations{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.tt-dest{font-size:11px;padding:2px 8px;border-radius:5px;background:#f5f4f0;color:#555;border:1px solid #e0ddd6}
+.tt-insight{margin-top:2px;font-size:11px;font-weight:600;padding:6px 10px;border-radius:6px;line-height:1.5}
+.tt-insight-red{background:#FCEBEB;color:#791F1F;border-left:2px solid #E24B4A}
+.tt-insight-blue{background:#E6F1FB;color:#0C447C;border-left:2px solid #378ADD}
+.tt-insight-gray{background:#F1EFE8;color:#444;border-left:2px solid #888780}
+.tt-insight-amber{background:#FAEEDA;color:#633806;border-left:2px solid #BA7517}
+.def-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.def-card{background:#fafaf8;border-radius:7px;padding:10px 12px;border:1px solid #e0ddd6}
+.def-term{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.def-desc{font-size:11px;color:#666;line-height:1.6}
+.sec-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#888;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="outer">
+
+<div style="margin-bottom:20px">
+  <div class="jr-title">Japan Rail — Bookable Routes by Hub</div>
+  <div class="jr-sub">Search by airport code → locate routes below. If it's listed here, it's bookable in system.</div>
+  <div class="jr-legend">
+    <span class="lbadge lbadge-red"><span class="dot dot-red"></span>Shinkansen — long-distance / fastest</span>
+    <span class="lbadge lbadge-blue"><span class="dot dot-blue"></span>Limited Express / Regional — scenic / access</span>
+    <span class="lbadge lbadge-gray"><span class="dot dot-gray"></span>Note — naming or routing clarification</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPage('p1',this)">Cheat Sheet</button>
+  <button class="tab" onclick="showPage('p2',this)">Quick Decision Tool</button>
+  <button class="tab" onclick="showPage('p3',this)">Train Types</button>
+</div>
+
+<!-- PAGE 1 -->
+<div id="p1" class="page active">
+  <div class="filter-bar">
+    <button class="filt on" onclick="filterHubs('all',this)">All hubs</button>
+    <button class="filt" onclick="filterHubs('shinkansen',this)">Shinkansen hubs</button>
+    <button class="filt" onclick="filterHubs('regional',this)">Regional hubs</button>
+  </div>
+  <div class="hub-grid" id="hubGrid">
+
+    <div class="hub-card" data-type="shinkansen">
+      <div class="hub-head">
+        <div class="hub-code"><span class="dot dot-red"></span>HND / NRT <span style="font-size:12px;color:#888;font-weight:400">Tokyo</span></div>
+        <div class="hub-cities">Tokyo · Shinjuku · Hakone · Kawaguchiko · Nikko · Matsumoto · Nagano</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label rsec-label-red"><span class="dot dot-red"></span>Shinkansen</div>
+          <div class="route-list">
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Kyoto</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Shin-Osaka</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Hiroshima</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Nagoya</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Kanazawa</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Toyama</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Nagano</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Sendai / Yamagata</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Mishima</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Odawara</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Shin-Yokohama</div>
+            <div class="route-item route-item-red">Tokyo <span class="route-arrow">→</span> Nikko</div>
+          </div>
+        </div>
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Destination Access</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">Shinjuku <span class="route-arrow">→</span> Hakone-Yumoto</div>
+            <div class="route-item route-item-blue">Shinjuku <span class="route-arrow">→</span> Kawaguchiko</div>
+            <div class="route-item route-item-blue">Shinjuku <span class="route-arrow">→</span> Matsumoto</div>
+            <div class="route-item route-item-blue">Shinjuku <span class="route-arrow">→</span> Hakuba</div>
+            <div class="route-item route-item-blue">Shinjuku <span class="route-arrow">→</span> Otsuki</div>
+          </div>
+        </div>
+        <div class="route-note">Hakone may appear as Odawara or Hakone-Yumoto depending on search</div>
+      </div>
+    </div>
+
+    <div class="hub-card" data-type="shinkansen">
+      <div class="hub-head">
+        <div class="hub-code"><span class="dot dot-red"></span>KIX <span style="font-size:12px;color:#888;font-weight:400">Kyoto / Osaka</span></div>
+        <div class="hub-cities">Kyoto · Osaka · Shin-Osaka · Kobe · Himeji · Kinosaki Onsen</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label rsec-label-red"><span class="dot dot-red"></span>Shinkansen — Kyoto origin</div>
+          <div class="route-list">
+            <div class="route-item route-item-red">Kyoto <span class="route-arrow">→</span> Tokyo</div>
+            <div class="route-item route-item-red">Kyoto <span class="route-arrow">→</span> Hiroshima</div>
+            <div class="route-item route-item-red">Kyoto <span class="route-arrow">→</span> Nagoya</div>
+            <div class="route-item route-item-red">Kyoto <span class="route-arrow">→</span> Okayama</div>
+            <div class="route-item route-item-red">Kyoto <span class="route-arrow">→</span> Odawara</div>
+            <div class="route-item route-item-red">Kyoto <span class="route-arrow">→</span> Shin-Yokohama</div>
+          </div>
+        </div>
+        <div class="route-section">
+          <div class="rsec-label rsec-label-red"><span class="dot dot-red"></span>Shinkansen — Shin-Osaka origin</div>
+          <div class="route-list">
+            <div class="route-item route-item-red">Shin-Osaka <span class="route-arrow">→</span> Tokyo</div>
+            <div class="route-item route-item-red">Shin-Osaka <span class="route-arrow">→</span> Hiroshima</div>
+            <div class="route-item route-item-red">Shin-Osaka <span class="route-arrow">→</span> Nagoya</div>
+            <div class="route-item route-item-red">Shin-Osaka <span class="route-arrow">→</span> Odawara</div>
+          </div>
+        </div>
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Regional / Access</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">Kyoto <span class="route-arrow">↔</span> Osaka</div>
+            <div class="route-item route-item-blue">Kyoto <span class="route-arrow">→</span> Kinosaki Onsen</div>
+            <div class="route-item route-item-blue">Osaka <span class="route-arrow">→</span> Kinosaki Onsen</div>
+            <div class="route-item route-item-blue">Kyoto <span class="route-arrow">↔</span> KIX Airport</div>
+            <div class="route-item route-item-blue">Shin-Osaka <span class="route-arrow">↔</span> KIX Airport</div>
+            <div class="route-item route-item-blue">Kyoto <span class="route-arrow">→</span> Kanazawa</div>
+            <div class="route-item route-item-blue">Osaka <span class="route-arrow">→</span> Kanazawa</div>
+            <div class="route-item route-item-blue">Osaka <span class="route-arrow">→</span> Himeji</div>
+          </div>
+        </div>
+        <div class="route-note">Osaka / Shin-Osaka / Osaka Station = same metro area, different rail points</div>
+      </div>
+    </div>
+
+    <div class="hub-card" data-type="shinkansen">
+      <div class="hub-head">
+        <div class="hub-code"><span class="dot dot-red"></span>NGO <span style="font-size:12px;color:#888;font-weight:400">Nagoya</span></div>
+        <div class="hub-cities">Nagoya · Central Japan</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label rsec-label-red"><span class="dot dot-red"></span>Shinkansen</div>
+          <div class="route-list">
+            <div class="route-item route-item-red">Nagoya <span class="route-arrow">→</span> Tokyo</div>
+            <div class="route-item route-item-red">Nagoya <span class="route-arrow">→</span> Kyoto</div>
+            <div class="route-item route-item-red">Nagoya <span class="route-arrow">→</span> Odawara</div>
+          </div>
+        </div>
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Access</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">Nagoya <span class="route-arrow">→</span> Takayama</div>
+          </div>
+        </div>
+        <div class="route-note">Key transfer hub for central Japan — many Takayama routes pass through here</div>
+      </div>
+    </div>
+
+    <div class="hub-card" data-type="shinkansen">
+      <div class="hub-head">
+        <div class="hub-code"><span class="dot dot-red"></span>KMQ <span style="font-size:12px;color:#888;font-weight:400">Kanazawa</span></div>
+        <div class="hub-cities">Kanazawa · Northern Alps</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label rsec-label-red"><span class="dot dot-red"></span>Shinkansen</div>
+          <div class="route-list">
+            <div class="route-item route-item-red">Kanazawa <span class="route-arrow">→</span> Tokyo</div>
+            <div class="route-item route-item-red">Kanazawa <span class="route-arrow">→</span> Toyama</div>
+            <div class="route-item route-item-red">Kanazawa <span class="route-arrow">→</span> Nagano</div>
+            <div class="route-item route-item-red">Kanazawa <span class="route-arrow">→</span> Takayama</div>
+          </div>
+        </div>
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Access</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">Kanazawa <span class="route-arrow">→</span> Kyoto</div>
+            <div class="route-item route-item-blue">Kanazawa <span class="route-arrow">→</span> Osaka</div>
+          </div>
+        </div>
+        <div class="route-note">Takayama routes may travel via Toyama</div>
+      </div>
+    </div>
+
+    <div class="hub-card" data-type="regional">
+      <div class="hub-head">
+        <div class="hub-code"><span class="dot dot-blue"></span>MMJ <span style="font-size:12px;color:#888;font-weight:400">Matsumoto / Kiso Valley</span></div>
+        <div class="hub-cities">Matsumoto · Kiso Valley</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Limited Express / Regional</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">Matsumoto <span class="route-arrow">→</span> Shinjuku</div>
+            <div class="route-item route-item-blue">Matsumoto <span class="route-arrow">→</span> Nagoya</div>
+            <div class="route-item route-item-blue">Nagiso <span class="route-arrow">→</span> Kiso-Fukushima</div>
+            <div class="route-item route-item-blue">Kiso-Fukushima <span class="route-arrow">→</span> Matsumoto</div>
+            <div class="route-item route-item-blue">Kiso-Fukushima <span class="route-arrow">→</span> Nagoya</div>
+            <div class="route-item route-item-blue">Kiso-Fukushima <span class="route-arrow">→</span> Nakatsugawa</div>
+          </div>
+        </div>
+        <div class="route-note">Scenic inland routes — no Shinkansen service in this region</div>
+      </div>
+    </div>
+
+    <div class="hub-card" data-type="regional">
+      <div class="hub-head">
+        <div class="hub-code"><span class="dot dot-blue"></span>CTS <span style="font-size:12px;color:#888;font-weight:400">Sapporo / Hokkaido</span></div>
+        <div class="hub-cities">Sapporo · Hakodate · Asahikawa</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Limited Express</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">CTS Airport <span class="route-arrow">→</span> Sapporo</div>
+            <div class="route-item route-item-blue">Sapporo <span class="route-arrow">→</span> Hakodate</div>
+            <div class="route-item route-item-blue">Sapporo <span class="route-arrow">→</span> Asahikawa</div>
+            <div class="route-item route-item-blue">Lake Toya <span class="route-arrow">→</span> Sapporo</div>
+          </div>
+        </div>
+        <div class="route-note">All routes are Limited Express — no bullet train network in Hokkaido</div>
+      </div>
+    </div>
+
+    <div class="hub-card" data-type="shinkansen">
+      <div class="hub-head">
+        <div class="hub-code"><span style="display:flex;gap:3px;align-items:center"><span class="dot dot-red"></span><span class="dot dot-blue"></span></span>TOY <span style="font-size:12px;color:#888;font-weight:400">Toyama</span></div>
+        <div class="hub-cities">Toyama · Takayama</div>
+      </div>
+      <div class="hub-body">
+        <div class="route-section">
+          <div class="rsec-label rsec-label-red"><span class="dot dot-red"></span>Shinkansen</div>
+          <div class="route-list">
+            <div class="route-item route-item-red">Toyama <span class="route-arrow">→</span> Tokyo</div>
+            <div class="route-item route-item-red">Toyama <span class="route-arrow">→</span> Kanazawa</div>
+          </div>
+        </div>
+        <div class="route-section">
+          <div class="rsec-label" style="color:#185FA5"><span class="dot dot-blue"></span>Limited Express / Access</div>
+          <div class="route-list">
+            <div class="route-item route-item-blue">Toyama <span class="route-arrow">↔</span> Takayama</div>
+            <div class="route-item route-item-blue">Takayama <span class="route-arrow">→</span> Nagoya</div>
+            <div class="route-item route-item-blue">Takayama <span class="route-arrow">→</span> Kyoto</div>
+            <div class="route-item route-item-blue">Takayama <span class="route-arrow">→</span> Tokyo</div>
+          </div>
+        </div>
+        <div class="route-note">Takayama → Tokyo typically routes via Nagoya</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE 2 -->
+<div id="p2" class="page">
+  <div class="p2-grid">
+    <div class="p2-card">
+      <div class="p2-card-title">Major city to major city</div>
+      <div class="p2-train-badge p2-train-red"><span class="dot dot-red"></span>Use Shinkansen</div>
+      <div class="p2-ex"><span>Tokyo → Kyoto</span><span>Osaka → Tokyo</span><span>Tokyo → Hiroshima</span></div>
+    </div>
+    <div class="p2-card">
+      <div class="p2-card-title">Scenic / experience destinations</div>
+      <div class="p2-train-badge p2-train-blue"><span class="dot dot-blue"></span>Use Limited Express</div>
+      <div class="p2-ex"><span>Kyoto → Kinosaki Onsen</span><span>Shinjuku → Hakone</span><span>Nagoya → Takayama</span></div>
+    </div>
+    <div class="p2-card">
+      <div class="p2-card-title">Short distance</div>
+      <div class="p2-train-badge p2-train-blue"><span class="dot dot-blue"></span>Use Regional / JR</div>
+      <div class="p2-ex"><span>Osaka → Himeji</span><span>Kyoto ↔ Osaka</span></div>
+    </div>
+    <div class="p2-card">
+      <div class="p2-card-title">Route exists in system</div>
+      <div style="font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:8px">Book it as shown</div>
+      <div class="p2-ex"><span>Do not split into multiple trains unless required</span><span style="margin-top:4px;display:block">If it's on the cheat sheet — it's bookable</span></div>
+    </div>
+  </div>
+  <div class="mistakes-card">
+    <div class="mistakes-title">Common booking mistakes — flag in training</div>
+    <div class="mistake-item">Searching by city name instead of airport code</div>
+    <div class="mistake-item">Assuming all routes must be direct — connections are normal</div>
+    <div class="mistake-item">Trying to manually "build" rail segments one by one</div>
+    <div class="mistake-item">Missing Hakone — may appear as Odawara or Hakone-Yumoto in search</div>
+    <div class="mistake-item">Missing Nikko from Tokyo — it is a bookable Shinkansen route</div>
+  </div>
+</div>
+
+<!-- PAGE 3 -->
+<div id="p3" class="page">
+  <div class="tt-grid">
+    <div class="tt-card">
+      <div class="tt-head">
+        <div class="tt-icon tt-icon-red" style="color:#E24B4A;font-size:18px;font-weight:700">&#9632;</div>
+        <div><div class="tt-name">Shinkansen (Bullet Train)</div><div class="tt-tagline">High-speed / dedicated track / intercity backbone</div></div>
+      </div>
+      <div class="tt-body">
+        <div class="tt-row"><div class="tt-row-label">What it is</div><div class="tt-row-val">Japan's high-speed network on dedicated tracks. Fastest trains in the country — minimal stops, high frequency, highly reliable.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Use for</div><div class="tt-row-val">City-to-city movement across long distances. Replaces flights for most Japan itineraries and sets the pace of the trip.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Key routes</div>
+          <div class="tt-destinations">
+            <span class="tt-dest">Tokyo ↔ Kyoto</span><span class="tt-dest">Tokyo ↔ Osaka</span><span class="tt-dest">Tokyo ↔ Hiroshima</span><span class="tt-dest">Tokyo ↔ Kanazawa</span>
+          </div>
+        </div>
+        <div class="tt-insight tt-insight-red">Default choice when both endpoints are major cities</div>
+      </div>
+    </div>
+    <div class="tt-card">
+      <div class="tt-head">
+        <div class="tt-icon tt-icon-blue" style="color:#378ADD;font-size:18px;font-weight:700">&#9632;</div>
+        <div><div class="tt-name">Limited Express</div><div class="tt-tagline">Regional fast trains / standard track / scenic reach</div></div>
+      </div>
+      <div class="tt-body">
+        <div class="tt-row"><div class="tt-row-label">What it is</div><div class="tt-row-val">Faster regional trains — not high-speed, but limited stops. Run on standard rail lines, not dedicated Shinkansen tracks.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Use for</div><div class="tt-row-val">Destinations off the bullet train network. This is where the itinerary becomes experiential — rural, scenic, and cultural access.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Enables</div>
+          <div class="tt-destinations">
+            <span class="tt-dest">Takayama</span><span class="tt-dest">Kiso Valley</span><span class="tt-dest">Hakone</span><span class="tt-dest">Kinosaki Onsen</span><span class="tt-dest">Hakuba</span>
+          </div>
+        </div>
+        <div class="tt-insight tt-insight-blue">If Shinkansen = backbone, Limited Express = reach and depth</div>
+      </div>
+    </div>
+    <div class="tt-card">
+      <div class="tt-head">
+        <div class="tt-icon tt-icon-gray" style="color:#888780;font-size:18px;font-weight:700">&#9632;</div>
+        <div><div class="tt-name">JR Rapid / Local</div><div class="tt-tagline">Commuter / regional connectors / short range</div></div>
+      </div>
+      <div class="tt-body">
+        <div class="tt-row"><div class="tt-row-label">What it is</div><div class="tt-row-val">Standard commuter or regional trains. More stops, slower, lower cost than Limited Express.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Use for</div><div class="tt-row-val">Short-distance connections, final-mile transfers, and close-range city hops.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Examples</div>
+          <div class="tt-destinations"><span class="tt-dest">Osaka → Himeji</span><span class="tt-dest">Kyoto ↔ Osaka</span></div>
+        </div>
+        <div class="tt-insight tt-insight-gray">Supporting role only — not a primary planning tool for luxury itineraries</div>
+      </div>
+    </div>
+    <div class="tt-card">
+      <div class="tt-head">
+        <div class="tt-icon tt-icon-amber" style="color:#BA7517;font-size:18px;font-weight:700">&#9830;</div>
+        <div><div class="tt-name">Specialty Train</div><div class="tt-tagline">Experience-driven / premium / upsell opportunity</div></div>
+      </div>
+      <div class="tt-body">
+        <div class="tt-row"><div class="tt-row-label">What it is</div><div class="tt-row-val">Branded premium trains with a distinct onboard experience. Not just transport — part of the trip itself.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Example</div><div class="tt-row-val">Romancecar — Shinjuku to Hakone. Panoramic windows, reserved seating, elevated comfort.</div></div>
+        <div class="tt-row"><div class="tt-row-label">Why it matters</div><div class="tt-row-val">Easy upsell for luxury clients. Enhances perceived value and differentiates the itinerary.</div></div>
+        <div class="tt-insight tt-insight-amber">Lead with the experience, not the transport — advisors sell the Romancecar, not the train</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:4px">
+    <div class="sec-label">Quick-reference definitions</div>
+    <div class="def-grid">
+      <div class="def-card"><div class="def-term"><span class="dot dot-red"></span>Shinkansen (Bullet Train)</div><div class="def-desc">High-speed, long-distance rail connecting major cities; primary transportation backbone</div></div>
+      <div class="def-card"><div class="def-term"><span class="dot dot-blue"></span>Limited Express</div><div class="def-desc">Regional fast trains connecting secondary destinations not served by Shinkansen</div></div>
+      <div class="def-card"><div class="def-term"><span class="dot dot-gray"></span>JR Rapid / Local</div><div class="def-desc">Short-distance or commuter trains used for local connections and final-mile access</div></div>
+      <div class="def-card"><div class="def-term"><span class="dot dot-blue"></span>Destination Access Route</div><div class="def-desc">Rail routes primarily used to reach leisure destinations — Hakone, Kinosaki, Kawaguchiko</div></div>
+      <div class="def-card"><div class="def-term"><span class="dot dot-gray"></span>Combination Route</div><div class="def-desc">Single journey using multiple train types — e.g., Limited Express connecting to Shinkansen — to bridge regions</div></div>
+      <div class="def-card"><div class="def-term"><span class="dot dot-amber"></span>Specialty Train</div><div class="def-desc">Experience-driven rail with enhanced comfort or scenic value — e.g., Romancecar (Shinjuku → Hakone)</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+function filterHubs(type,btn){
+  document.querySelectorAll('.filt').forEach(f=>f.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.hub-card').forEach(c=>{
+    if(type==='all'){c.classList.remove('hidden')}
+    else if(type==='shinkansen'){c.classList.toggle('hidden',c.dataset.type!=='shinkansen')}
+    else if(type==='regional'){c.classList.toggle('hidden',c.dataset.type!=='regional')}
+  });
+}
+</script>
+</body>
+</html>
